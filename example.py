@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
 from PIL import Image
 
-from coco2voc import *
-
+from coco_to_voc import *
 
 def on_press(event):
     """
@@ -37,9 +36,9 @@ def on_press(event):
 
 if __name__ == '__main__':
     # !!Change paths to your local machine!!
-    annotations_file = r'/home/alicranck/almog/coco2voc/annotations_trainval2017/annotations/instances_val2017.json'
-    labels_target_folder = r'/home/alicranck/almog/coco2voc/outputs'
-    data_folder = '/home/alicranck/almog/coco2voc/val2017'
+    annotations_file = r'0000017898.json'
+    labels_target_folder = r'./image'
+    data_folder = '.'
 
     # Convert n=25 annotations
     coco2voc(annotations_file, labels_target_folder, n=25, apply_border=True, compress=True)
