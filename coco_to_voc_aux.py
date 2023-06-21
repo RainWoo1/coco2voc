@@ -1,4 +1,4 @@
-from typing import Sequence
+# from typing import Sequence
 
 import numpy as np
 from PIL import Image, ImageFilter
@@ -16,7 +16,7 @@ def annotations_to_seg(annotations, coco_instance, apply_border):
     
     # image_details는
     image_details = coco_instance.loadImgs(annotations[0]['image_id'])[0]
-    print(image_details)
+    # print(image_details)
 
     h = image_details['height']
     w = image_details['width']
@@ -30,7 +30,6 @@ def annotations_to_seg(annotations, coco_instance, apply_border):
     masks, annotations = annotations_to_mask(annotations, h, w)
 
     for i, mask in enumerate(masks):
-        # np.where(class_seg > 0, class_seg, mask)
         class_seg = np.where(class_seg > 0, class_seg, mask * annotations[i]['category_id'])
         instance_seg = np.where(instance_seg > 0, instance_seg, mask * (i+1))
         id_seg = np.where(id_seg > 0, id_seg, mask * annotations[i]['id'])
