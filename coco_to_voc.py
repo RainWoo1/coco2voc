@@ -8,9 +8,10 @@ from coco_to_voc_aux import annotations_to_seg
 
 def coco2voc(annotations_file: str, folder: str, n: int = None, apply_border: bool = False):
 
-    coco_instance = COCO(annotations_file) # COCO 파일 불러오기
+    annVal = os.path.join(annotations_file, 'annotations', os.path.basename(annotations_file))
+    coco_instance = COCO(annVal) # COCO 파일 불러오기
     coco_imgs = coco_instance.imgs # coco image 전체 불러오기 {이미지 id: "images" 하위에 있는 정보 읽어오기}
-    coco_anns = coco_instance.anns # coco anns 전체 불러오기
+    # coco_anns = coco_instance.anns # coco anns 전체 불러오기
 
     if n == None: n = len(coco_imgs)
     else:
@@ -44,7 +45,6 @@ def coco2voc(annotations_file: str, folder: str, n: int = None, apply_border: bo
 
     return 0
 
-coco2voc('colonoscopy1-2.json','./image', 1, False)
 
 
 # annotation_ids = coco_instance.getAnnIds(img) # annotations에 있는 id. [1, 4, 6]
