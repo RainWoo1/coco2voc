@@ -9,14 +9,12 @@ from pycocotools.coco import COCO
 PIXEL = 255
 BORDER_THICKNESS = 7
 
-def annotations_to_seg(annotations, coco_instance, apply_border):
+def annotations_to_seg(annotations, coco_instance, apply_border, color):
     # annotations: Sequence[dict] annotations json part
     # coco_instance: COCO
     # apply_border: bool = False
     
-    # image_details는
     image_details = coco_instance.loadImgs(annotations[0]['image_id'])[0]
-    # print(image_details)
 
     h = image_details['height']
     w = image_details['width']
@@ -30,15 +28,15 @@ def annotations_to_seg(annotations, coco_instance, apply_border):
     masks, annotations = annotations_to_mask(annotations, h, w)
 
     for i, mask in enumerate(masks):
-        class_seg = np.where(class_seg > 0, class_seg, mask * annotations[i]['category_id'])
-        instance_seg = np.where(instance_seg > 0, instance_seg, mask * (i+1))
-        id_seg = np.where(id_seg > 0, id_seg, mask * annotations[i]['id'])
-
+        if apply_border == False:
+            class_seg = np.where(class_seg > 0, class_seg, mask * annotations[i]['category_id'])
+            instance_seg = np.where(instance_seg > 0, instance_seg, mask * (i+1))
+            id_seg = np.where(id_seg > 0, id_seg, mask * annotations[i]['id'])
         # whether to add a void (255) border region around the masks or not
-        # if apply_border:
-        #     border = get_border(mask, BORDER_THICKNESS) # get border
-        #     for seg in [class_seg, instance_seg, id_seg]:
-        #         seg[border > 0] = PIXEL
+        else:
+            border = get_border(mask, color, BORDER_THICKNESS) # get border
+            for seg in [class_seg, instance_seg, id_seg]:
+                seg[border > 0] = PIXEL
 
     # three 2D numpy arrays where the value of each pixel is the class id, instance number, and instance id
     return class_seg, instance_seg, id_seg.astype(np.int64)
@@ -77,7 +75,7 @@ def annotations_to_mask(annotations, h, w):
     return masks, annotations
 
 
-def get_border(mask: np.ndarray, thickness_factor: int = 7) -> np.ndarray:
+def get_border(mask: np.ndarray, color: str, thickness_factor: int = 7) -> np.ndarray:
 
     # np.ndarray, int = 7
     pil_mask = Image.fromarray(mask)  # Use PIL to reduce dependencies
