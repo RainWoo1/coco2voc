@@ -45,8 +45,6 @@ def coco2voc(annotations_file: str, folder: str, n: int = None, apply_border: bo
 
     return 0
 
-
-
 # annotation_ids = coco_instance.getAnnIds(img) # annotations에 있는 id. [1, 4, 6]
 # annotations = coco_instance.loadAnns(annotation_ids) # annotations 부분 id부터 segmentations을 다 보기
 # if not annotations:

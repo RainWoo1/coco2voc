@@ -12,7 +12,6 @@ from coco_to_voc_aux import annotations_to_seg
 
 window = Tk()
 window.title("COCO to VOC")
-# window.geometry("640x400+100+100")
 
 def add_file():
     files = filedialog.askopenfilename(title='입력 파일을 선택하세요', \
@@ -63,7 +62,6 @@ def start():
     print(download_file_path)
     print(type(download_file_path)) 
     """
-
 
 def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, apply_border: bool = False):
 
