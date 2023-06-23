@@ -1,3 +1,5 @@
+# -*- mode: python ; coding: utf-8 -*-
+
 import os
 from tkinter import *
 import tkinter.ttk as ttk
@@ -14,11 +16,11 @@ window = Tk()
 window.title("COCO to VOC")
 
 def add_file():
-    files = filedialog.askopenfilename(title='입력 파일을 선택하세요', \
+    files = filedialog.askopenfilenames(title='입력 파일을 선택하세요', \
         initialdir=r"C:\Users\waycen\Downloads", \
         filetypes=(('json files','*.json'),('all files','*.*')))
-    list_file.insert(END, files) # 한 개의 파일만 업로드 가능        
-    # label.configure(text="파일: " + file)
+    for file in files:
+        list_file.insert(END, file)
 
 # 선택 삭제
 def del_file():
@@ -47,21 +49,16 @@ def start():
     download_file_path = txt_dest_path.get()
     img_style = cmb_style.get()
     color = cmb_color.get()
-
+    # print(type(upload_file_path))
+    # print(upload_file_path)
     if img_style == "Shade":
         img_style = False
     else:
         img_style = True
 
-    coco2voc(upload_file_path[0], download_file_path, color, 1, img_style)
-"""
-     print(upload_file_path[0])
-    print(type(upload_file_path[0]))
-    print(img_style)
-    print(type(img_style))
-    print(download_file_path)
-    print(type(download_file_path)) 
-    """
+    for i in range(len(upload_file_path)):
+        coco2voc(upload_file_path[i], download_file_path, color, 1, img_style)
+
 
 def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, apply_border: bool = False):
 
@@ -82,7 +79,6 @@ def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, appl
     elif CheckVar1.get() == 0:
         class_target_path = folder + '/'
 
-
     for i, img in enumerate(coco_imgs):
         img_id = coco_instance.getImgIds(img) # [14]
 
@@ -93,8 +89,8 @@ def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, appl
         if not annotation_ids:
             continue
         annotations = coco_instance.loadAnns(annotation_ids)
-        class_seg, instance_seg, id_seg = annotations_to_seg(annotations, coco_instance, apply_border, color) # segment에 annotation하는 함수
-        Image.fromarray(class_seg).convert("P").save(class_target_path + coco_imgs[img_id[0]]['file_name'][:-4] + '_EGC.png') # NumPy 배열을 PIL 이미지로 변환
+        class_seg, instance_seg, id_seg, class_mask = annotations_to_seg(annotations, coco_instance, apply_border, color) # segment에 annotation하는 함수
+        Image.fromarray(class_mask).convert("P").save(class_target_path + coco_imgs[img_id[0]]['file_name'][:-4] + '_EGC.png') # NumPy 배열을 PIL 이미지로 변환
         
         # tool
         category_id = coco_instance.getCatIds(catNms=['tools']) # [82]
@@ -103,8 +99,8 @@ def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, appl
             continue
         else:
             annotations1 = coco_instance.loadAnns(annotation_id1)
-            class_seg, instance_seg, id_seg = annotations_to_seg(annotations1, coco_instance, apply_border, color) # segment에 annotation하는 함수
-            Image.fromarray(class_seg).convert("P").save(class_target_path + coco_imgs[img_id[0]]['file_name'][:-4] +  '_EGC_' + str(category_id[0]) +'.png')
+            class_seg, instance_seg, id_seg, class_mask = annotations_to_seg(annotations1, coco_instance, apply_border, color) # segment에 annotation하는 함수
+            Image.fromarray(class_mask).convert("P").save(class_target_path + coco_imgs[img_id[0]]['file_name'][:-4] +  '_EGC_' + str(category_id[0]) +'.png')
 
 
 # 파일 프레임 (파일 추가)

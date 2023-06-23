@@ -44,8 +44,3 @@ def coco2voc(annotations_file: str, folder: str, n: int = None, apply_border: bo
             Image.fromarray(class_seg).convert("P").save(class_target_path + '/' + coco_imgs[img_id[0]]['file_name'][:-4] +  '_EGC_' + str(category_id[0]) +'.png')
 
     return 0
-
-# annotation_ids = coco_instance.getAnnIds(img) # annotations에 있는 id. [1, 4, 6]
-# annotations = coco_instance.loadAnns(annotation_ids) # annotations 부분 id부터 segmentations을 다 보기
-# if not annotations:
-#     continue

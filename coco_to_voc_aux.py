@@ -25,31 +25,39 @@ def annotations_to_seg(annotations, coco_instance, apply_border, color):
     masks, annotations = annotations_to_mask(annotations, h, w)
 
     for i, mask in enumerate(masks):
-        if i == 1: break
+        # if i == 1: break
         if apply_border == False:
-            class_seg = np.where(class_seg > 0, class_seg, mask * annotations[i]['category_id'])
+            class_seg = np.where(class_seg > 0, class_seg, mask * annotations[i]['category_id'])  # 81
             instance_seg = np.where(instance_seg > 0, instance_seg, mask * (i+1))
             id_seg = np.where(id_seg > 0, id_seg, mask * annotations[i]['id'])
-            class_seg = np.stack([class_seg, class_seg, class_seg], axis = -1)
+            # class_seg = np.stack([class_seg, class_seg, class_seg], axis = -1)
             # class_seg[h, w] = (255, 0, 0)
+            selected_region = np.where(mask == 1) # class_seg == i
             class_mask = np.zeros((h, w, 3), np.uint8)
-            class_mask[class_seg == i] = (255, 0, 0)
-            
-            # for x in range(h):
-            #     for y in range(w):
-            #         class_seg[y, x] = (255, 0, 0) # Red
-            # class_seg = np.uint8(class_seg)
+
+            # 컬러 정하기
+            if color == "빨간색":
+                class_mask[selected_region] = (255, 0, 0)
+            elif color == "파란색":
+                class_mask[selected_region] = (0, 0, 255)
+            else:
+                class_mask[selected_region] = (255, 255, 255)
 
         # whether to add a void (255) border region around the masks or not
         else:
             border = get_border(mask, color, BORDER_THICKNESS) # get border
-            for seg in [class_seg, instance_seg, id_seg]:
-                seg[border > 0] = PIXEL
-
+            border_mask = np.zeros((h, w, 3), np.uint8)
+            selected_region = np.where(border > 0)
+            border_mask[selected_region] = (255, 0, 0)
+            # for seg in [class_seg, instance_seg, id_seg]:
+                # border_mask[border > 0][]
+                # seg[border > 0] = (255, 0, 0)
 
     # three 2D numpy arrays where the value of each pixel is the class id, instance number, and instance id
-    return class_seg, instance_seg, id_seg.astype(np.int64)
-
+    if apply_border == False:
+        return class_seg, instance_seg, id_seg.astype(np.int64), class_mask
+    else:
+        return class_seg, instance_seg, id_seg.astype(np.int64), border_mask
 
 def annotation_to_rle(ann, h, w):
     # dict, int, int
@@ -67,7 +75,6 @@ def annotation_to_rle(ann, h, w):
     
     # binary mask (numpy 2D array)
     return rle
-
 
 def annotations_to_mask(annotations, h, w):
     # Sequence[dict], int, int
@@ -93,20 +100,3 @@ def get_border(mask: np.ndarray, color: str, thickness_factor: int = 7) -> np.nd
     border = np.array(dilated_pil_mask) - mask
 
     return border
-
-def border():
-    img_color = cv.imread()
-    contours, hierarchy = cv.findContours(img_binary, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-
-    for cnt in contours:
-        cv.drawContours(img_color, [cnt], 0, (255, 0, 0), 3) # blue
-
-    cv.imshow("result", img_color)
-    cv.waitKey(0)
-
-    for cnt in contours:
-        area = cv.contourArea(cnt)
-        print(area)
-
-    cv.imshow("result", img_color)
-    cv.waitKey(0)
