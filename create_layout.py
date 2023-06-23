@@ -12,8 +12,13 @@ from pycocotools.coco import COCO
 
 from coco_to_voc_aux import annotations_to_seg
 
-window = Tk()
-window.title("COCO to VOC")
+def darkstyle(root):
+    style = ttk.Style(root)
+    root.call('source', 'azure dark/azure dark.tcl')
+    style.theme_use('azure')
+    style.configure("Accentbutton", foreground='white')
+    style.configure("Togglebutton", foreground='white')
+    return style
 
 def add_file():
     files = filedialog.askopenfilenames(title='입력 파일을 선택하세요', \
@@ -58,7 +63,9 @@ def start():
 
     for i in range(len(upload_file_path)):
         coco2voc(upload_file_path[i], download_file_path, color, 1, img_style)
-
+        progress = (len(upload_file_path) - i) * 100  # 실제 percent 정보를 계산
+        p_var.set(progress)
+        progress_bar.update()
 
 def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, apply_border: bool = False):
 
@@ -75,7 +82,11 @@ def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, appl
     filename = os.path.basename(annotations_file)
     if CheckVar1.get() == 1: # 상위폴더 만들기
         class_target_path = folder + '/' + filename[:-4] + '/' # JSON 파일을 import한다고 가정
-        os.makedirs(class_target_path)
+        try:
+            if not os.path.exists(class_target_path):
+                os.makedirs(class_target_path)
+        except OSError:
+            print("Error: Failed to create the directory")
     elif CheckVar1.get() == 0:
         class_target_path = folder + '/'
 
@@ -102,6 +113,18 @@ def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, appl
             class_seg, instance_seg, id_seg, class_mask = annotations_to_seg(annotations1, coco_instance, apply_border, color) # segment에 annotation하는 함수
             Image.fromarray(class_mask).convert("P").save(class_target_path + coco_imgs[img_id[0]]['file_name'][:-4] +  '_EGC_' + str(category_id[0]) +'.png')
 
+
+window = Tk()
+window.title("COCO to VOC")
+
+# big_frame = ttk.Frame(window)
+# big_frame.pack(fill="both", expand=True)
+
+# style = ttk.Style(window)
+# window.tk.call("source", "azure.tcl")
+# window.tk.call("set_theme", "dark")
+
+# style.theme_use('dark')
 
 # 파일 프레임 (파일 추가)
 file_frame = Frame(window) # label1 = Label(window, text="COCO format을 선택해 주세요.")
@@ -164,6 +187,14 @@ opt_color = ["빨간색", "파란색", "흰색"]
 cmb_color = ttk.Combobox(frame_option, state="readonly", values=opt_color, width=10)
 cmb_color.current(0)
 cmb_color.pack(side="left", padx=5, pady=5)
+
+# 진행 상황 Progress Bar
+frame_progress = LabelFrame(window, text="진행상황")
+frame_progress.pack(fill="x", padx=5, pady=5, ipady=5)
+
+p_var = DoubleVar()
+progress_bar = ttk.Progressbar(frame_progress, maximum=100, variable=p_var)
+progress_bar.pack(fill="x", padx=5, pady=5)
 
 # 실행 프레임
 frame_run = Frame(window)
