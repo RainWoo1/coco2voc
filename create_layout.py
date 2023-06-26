@@ -1,6 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import os
+import asyncio
+import time
 from tkinter import *
 import tkinter.ttk as ttk
 from tkinter import filedialog
@@ -41,33 +43,31 @@ def browse_dest_path():
     txt_dest_path.delete(0, END)
     txt_dest_path.insert(0, folder_selected)
 
-def start():
-    if list_file.size() == 0:
-        msgbox.showwarning("경고", "이미지 파일을 추가하세요")
-        return
-
-    if len(txt_dest_path.get()) == 0:
-        msgbox.showwarning("경고", "저장 경로를 선택하세요")
-        return
-    
-    upload_file_path = list_file.get(0, END)
-    download_file_path = txt_dest_path.get()
+async def start():
+    upload_file_path = list_file.get(0, END)    # print(type(upload_file_path))
+    download_file_path = txt_dest_path.get()    # print(upload_file_path)
     img_style = cmb_style.get()
     color = cmb_color.get()
-    # print(type(upload_file_path))
-    # print(upload_file_path)
+
     if img_style == "Shade":
         img_style = False
     else:
         img_style = True
 
+    files = []
     for i in range(len(upload_file_path)):
-        coco2voc(upload_file_path[i], download_file_path, color, 1, img_style)
         progress = (len(upload_file_path) - i) * 100  # 실제 percent 정보를 계산
         p_var.set(progress)
+        await coco2voc(upload_file_path[i], download_file_path, color, 1, img_style)
         progress_bar.update()
+        # functions = "coco2voc(" + upload_file_path[i] + ', ' + download_file_path + ', ' + color + ', ' + str(1) + ', ' + str(img_style) + ')'
+        # files.append(functions)
 
-def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, apply_border: bool = False):
+    # await asyncio.gather(
+    #     functions
+    # )
+
+async def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, apply_border: bool = False):
 
     annVal = os.path.join(annotations_file) #, 'annotations', os.path.basename(annotations_file)
     coco_instance = COCO(annVal) # COCO 파일 불러오기
@@ -112,10 +112,118 @@ def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, appl
             annotations1 = coco_instance.loadAnns(annotation_id1)
             class_seg, instance_seg, id_seg, class_mask = annotations_to_seg(annotations1, coco_instance, apply_border, color) # segment에 annotation하는 함수
             Image.fromarray(class_mask).convert("P").save(class_target_path + coco_imgs[img_id[0]]['file_name'][:-4] +  '_EGC_' + str(category_id[0]) +'.png')
+    
+    await asyncio.sleep(.1)
+    print("=== Log: ", filename, " finished ===")
+
+def s(event):
+    if list_file.size() == 0:
+        msgbox.showwarning("경고", "이미지 파일을 추가하세요")
+        return
+
+    if len(txt_dest_path.get()) == 0:
+        msgbox.showwarning("경고", "저장 경로를 선택하세요")
+        return
+
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(start())
+    finally:
+        loop.close()
 
 
-window = Tk()
-window.title("COCO to VOC")
+if __name__ == '__main__':
+
+    window = Tk()
+    window.title("COCO to VOC")
+
+    # 파일 프레임 (파일 추가)
+    file_frame = Frame(window) # label1 = Label(window, text="COCO format을 선택해 주세요.")
+    file_frame.pack(fill="x", padx=5, pady=5) # label1.pack()
+
+    btn_add_file = Button(file_frame, padx=5, pady=5, width=12, text="파일추가", command=add_file)
+    btn_add_file.pack(side="left")
+
+    btn_del_file = Button(file_frame, padx=5, pady=5, width=12, text="선택삭제", command=del_file)
+    btn_del_file.pack(side="right")
+
+    # 리스트 프레임
+    list_frame = Frame(window)
+    list_frame.pack(fill="both", padx=5, pady=5)
+
+    scrollbar = Scrollbar(list_frame)
+    scrollbar.pack(side="right", fill="y")
+
+    list_file = Listbox(list_frame, selectmode="extended", height=15, yscrollcommand=scrollbar.set)
+    list_file.pack(side="left", fill="both", expand=True)
+    scrollbar.config(command=list_file.yview)
+
+    # 저장 경로 프레임
+    path_frame = LabelFrame(window, text="저장경로")
+    path_frame.pack(fill="x", padx=5, pady=5, ipady=5)
+
+    txt_dest_path = Entry(path_frame)
+    txt_dest_path.pack(side="left", fill="x", expand=True, padx=5, pady=5, ipady=4) # 높이 변경
+
+    btn_dest_path = Button(path_frame, text="찾아보기", width=10, command=browse_dest_path)
+    btn_dest_path.pack(side="right", padx=5, pady=5)
+
+    # 이미지 파일 만들기 혹은 안 만들기
+    CheckVar1 = IntVar()
+    c1 = Checkbutton(window, text="다운로드 시 파일명으로 폴더 만들기", variable=CheckVar1)
+    c1.pack()
+
+    # 옵션 프레임
+    frame_option = LabelFrame(window, text="옵션")
+    frame_option.pack(padx=5, pady=5, ipady=5)
+
+    # 1. 선, 면 옵션
+    # 선, 면 레이블
+    lbl_style = Label(frame_option, text="스타일", width=8)
+    lbl_style.pack(side="left", padx=5, pady=5)
+
+    # 선, 면 콤보
+    opt_style = ["Shade", "Line"]
+    cmb_style = ttk.Combobox(frame_option, state="readonly", values=opt_style, width=10)
+    cmb_style.current(0)
+    cmb_style.pack(side="left", padx=5, pady=5)
+
+    # 2. 색 옵션
+    # 색 레이블
+    lbl_color = Label(frame_option, text="색", width=8)
+    lbl_color.pack(side="left", padx=5, pady=5)
+
+    # 색 레이블 콤보
+    opt_color = ["빨간색", "파란색", "흰색"]
+    cmb_color = ttk.Combobox(frame_option, state="readonly", values=opt_color, width=10)
+    cmb_color.current(0)
+    cmb_color.pack(side="left", padx=5, pady=5)
+
+    # 진행 상황 Progress Bar
+    frame_progress = LabelFrame(window, text="진행상황")
+    frame_progress.pack(fill="x", padx=5, pady=5, ipady=5)
+
+    p_var = DoubleVar()
+    progress_bar = ttk.Progressbar(frame_progress, maximum=100, variable=p_var)
+    progress_bar.pack(fill="x", padx=5, pady=5)
+
+    # 실행 프레임
+    frame_run = Frame(window)
+    frame_run.pack(fill="x", padx=5, pady=5)
+
+    btn_close = Button(frame_run, padx=5, pady=5, text="닫기", width=12, command=window.quit) # window.quit command=windowquit()
+   
+    btn_close.pack(side="right", padx=5, pady=5)
+
+    btn_start = Button(frame_run, padx=5, pady=5, text="시작", width=12)
+    btn_start.bind('<Button-1>', s)
+    btn_start.pack(side="right", padx=5, pady=5)
+
+    window.resizable(False, False)
+    window.mainloop()
+
+
+# class_target_path = os.path.join(folder, '/class_labels/')# class_labels 폴더
 
 # big_frame = ttk.Frame(window)
 # big_frame.pack(fill="both", expand=True)
@@ -126,87 +234,6 @@ window.title("COCO to VOC")
 
 # style.theme_use('dark')
 
-# 파일 프레임 (파일 추가)
-file_frame = Frame(window) # label1 = Label(window, text="COCO format을 선택해 주세요.")
-file_frame.pack(fill="x", padx=5, pady=5) # label1.pack()
-
-btn_add_file = Button(file_frame, padx=5, pady=5, width=12, text="파일추가", command=add_file)
-btn_add_file.pack(side="left")
-
-btn_del_file = Button(file_frame, padx=5, pady=5, width=12, text="선택삭제", command=del_file)
-btn_del_file.pack(side="right")
-
-# 리스트 프레임
-list_frame = Frame(window)
-list_frame.pack(fill="both", padx=5, pady=5)
-
-scrollbar = Scrollbar(list_frame)
-scrollbar.pack(side="right", fill="y")
-
-list_file = Listbox(list_frame, selectmode="extended", height=15, yscrollcommand=scrollbar.set)
-list_file.pack(side="left", fill="both", expand=True)
-scrollbar.config(command=list_file.yview)
-
-# 저장 경로 프레임
-path_frame = LabelFrame(window, text="저장경로")
-path_frame.pack(fill="x", padx=5, pady=5, ipady=5)
-
-txt_dest_path = Entry(path_frame)
-txt_dest_path.pack(side="left", fill="x", expand=True, padx=5, pady=5, ipady=4) # 높이 변경
-
-btn_dest_path = Button(path_frame, text="찾아보기", width=10, command=browse_dest_path)
-btn_dest_path.pack(side="right", padx=5, pady=5)
-
-# 이미지 파일 만들기 혹은 안 만들기
-CheckVar1 = IntVar()
-c1 = Checkbutton(window, text="다운로드 시 파일명으로 폴더 만들기", variable=CheckVar1)
-c1.pack()
-
-# 옵션 프레임
-frame_option = LabelFrame(window, text="옵션")
-frame_option.pack(padx=5, pady=5, ipady=5)
-
-# 1. 선, 면 옵션
-# 선, 면 레이블
-lbl_style = Label(frame_option, text="스타일", width=8)
-lbl_style.pack(side="left", padx=5, pady=5)
-
-# 선, 면 콤보
-opt_style = ["Shade", "Line"]
-cmb_style = ttk.Combobox(frame_option, state="readonly", values=opt_style, width=10)
-cmb_style.current(0)
-cmb_style.pack(side="left", padx=5, pady=5)
-
-# 2. 색 옵션
-# 색 레이블
-lbl_color = Label(frame_option, text="색", width=8)
-lbl_color.pack(side="left", padx=5, pady=5)
-
-# 색 레이블 콤보
-opt_color = ["빨간색", "파란색", "흰색"]
-cmb_color = ttk.Combobox(frame_option, state="readonly", values=opt_color, width=10)
-cmb_color.current(0)
-cmb_color.pack(side="left", padx=5, pady=5)
-
-# 진행 상황 Progress Bar
-frame_progress = LabelFrame(window, text="진행상황")
-frame_progress.pack(fill="x", padx=5, pady=5, ipady=5)
-
-p_var = DoubleVar()
-progress_bar = ttk.Progressbar(frame_progress, maximum=100, variable=p_var)
-progress_bar.pack(fill="x", padx=5, pady=5)
-
-# 실행 프레임
-frame_run = Frame(window)
-frame_run.pack(fill="x", padx=5, pady=5)
-
-btn_close = Button(frame_run, padx=5, pady=5, text="닫기", width=12, command=window.quit)
-btn_close.pack(side="right", padx=5, pady=5)
-
-btn_start = Button(frame_run, padx=5, pady=5, text="시작", width=12, command=start)
-btn_start.pack(side="right", padx=5, pady=5)
-
-window.resizable(False, False)
-window.mainloop()
-
-# class_target_path = os.path.join(folder, '/class_labels/')# class_labels 폴더
+# print(f"start : {time.strftime('%X')}")
+# asyncio.run(main())
+# print(f"end : {time.strftime('%X')}")
