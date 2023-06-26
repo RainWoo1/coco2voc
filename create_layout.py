@@ -54,12 +54,12 @@ async def start():
     else:
         img_style = True
 
-    files = []
     for i in range(len(upload_file_path)):
-        progress = (len(upload_file_path) - i) * 100  # 실제 percent 정보를 계산
+        progress = (i+1)/len(upload_file_path) * 100  # 실제 percent 정보를 계산
         p_var.set(progress)
-        await coco2voc(upload_file_path[i], download_file_path, color, 1, img_style)
         progress_bar.update()
+        await coco2voc(upload_file_path[i], download_file_path, color, 1, img_style)
+     
         # functions = "coco2voc(" + upload_file_path[i] + ', ' + download_file_path + ', ' + color + ', ' + str(1) + ', ' + str(img_style) + ')'
         # files.append(functions)
 
