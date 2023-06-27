@@ -1,12 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import os
-import asyncio
-import time
+# import time
 from tkinter import *
 import tkinter.ttk as ttk
 from tkinter import filedialog
 import tkinter.messagebox as msgbox
+import threading
 
 import numpy as np
 from PIL import Image
@@ -14,20 +14,12 @@ from pycocotools.coco import COCO
 
 from coco_to_voc_aux import annotations_to_seg
 
-def darkstyle(root):
-    style = ttk.Style(root)
-    root.call('source', 'azure dark/azure dark.tcl')
-    style.theme_use('azure')
-    style.configure("Accentbutton", foreground='white')
-    style.configure("Togglebutton", foreground='white')
-    return style
-
 def add_file():
     files = filedialog.askopenfilenames(title='입력 파일을 선택하세요', \
         initialdir=r"C:\Users\waycen\Downloads", \
         filetypes=(('json files','*.json'),('all files','*.*')))
     for file in files:
-        list_file.insert(END, file)
+        list_file.insert(END, file) # list_file.insert('', 'end', text=file, values=file, iid=str(file) + "번")
 
 # 선택 삭제
 def del_file():
@@ -43,9 +35,15 @@ def browse_dest_path():
     txt_dest_path.delete(0, END)
     txt_dest_path.insert(0, folder_selected)
 
-async def start():
-    upload_file_path = list_file.get(0, END)    # print(type(upload_file_path))
-    download_file_path = txt_dest_path.get()    # print(upload_file_path)
+def start():
+    global completedThreadNumber
+    global totalThreadNumber
+    completedThreadNumber = 0
+    p_var.set(0)
+    progress_bar.update()
+
+    upload_file_path = list_file.get(0, END)
+    download_file_path = txt_dest_path.get()
     img_style = cmb_style.get()
     color = cmb_color.get()
 
@@ -54,21 +52,20 @@ async def start():
     else:
         img_style = True
 
+    totalThreadNumber = len(upload_file_path)
+
     for i in range(len(upload_file_path)):
-        progress = (i+1)/len(upload_file_path) * 100  # 실제 percent 정보를 계산
-        p_var.set(progress)
-        progress_bar.update()
-        await coco2voc(upload_file_path[i], download_file_path, color, 1, img_style)
-     
-        # functions = "coco2voc(" + upload_file_path[i] + ', ' + download_file_path + ', ' + color + ', ' + str(1) + ', ' + str(img_style) + ')'
-        # files.append(functions)
+        print("=== Start Thread ===")
+        threading.Thread(target=coco2voc, args=(upload_file_path[i], download_file_path, color, 1, img_style)).start()
 
-    # await asyncio.gather(
-    #     functions
-    # )
+    print("Test finished")
 
-async def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, apply_border: bool = False):
+completedThreadNumber = 0
+totalThreadNumber = 0
 
+def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, apply_border: bool = False):
+    global completedThreadNumber
+    global totalThreadNumber
     annVal = os.path.join(annotations_file) #, 'annotations', os.path.basename(annotations_file)
     coco_instance = COCO(annVal) # COCO 파일 불러오기
     coco_imgs = coco_instance.imgs # coco image 전체 불러오기 {이미지 id: "images" 하위에 있는 정보 읽어오기}
@@ -113,8 +110,12 @@ async def coco2voc(annotations_file: str, folder: str, color: str, n: int = None
             class_seg, instance_seg, id_seg, class_mask = annotations_to_seg(annotations1, coco_instance, apply_border, color) # segment에 annotation하는 함수
             Image.fromarray(class_mask).convert("P").save(class_target_path + coco_imgs[img_id[0]]['file_name'][:-4] +  '_EGC_' + str(category_id[0]) +'.png')
     
-    await asyncio.sleep(.1)
     print("=== Log: ", filename, " finished ===")
+    completedThreadNumber += 1
+    progress = (completedThreadNumber)/totalThreadNumber * 100  # 실제 percent 정보를 계산
+    p_var.set(progress)
+    progress_bar.update()
+
 
 def s(event):
     if list_file.size() == 0:
@@ -125,11 +126,7 @@ def s(event):
         msgbox.showwarning("경고", "저장 경로를 선택하세요")
         return
 
-    loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(start())
-    finally:
-        loop.close()
+    start()
 
 
 if __name__ == '__main__':
@@ -153,6 +150,12 @@ if __name__ == '__main__':
 
     scrollbar = Scrollbar(list_frame)
     scrollbar.pack(side="right", fill="y")
+
+    # list_file = ttk.Treeview(list_frame, columns=(1, 2), height=15, show="headings", yscrollcommand=scrollbar.set)
+    # list_file.pack(side='left')
+    # list_file.heading(1, text="파일명")
+    # list_file.heading(2, text="진행상황")
+    # list_file.column(2, width=100)
 
     list_file = Listbox(list_frame, selectmode="extended", height=15, yscrollcommand=scrollbar.set)
     list_file.pack(side="left", fill="both", expand=True)
@@ -219,21 +222,5 @@ if __name__ == '__main__':
     btn_start.bind('<Button-1>', s)
     btn_start.pack(side="right", padx=5, pady=5)
 
-    window.resizable(False, False)
+    window.resizable(True, True)
     window.mainloop()
-
-
-# class_target_path = os.path.join(folder, '/class_labels/')# class_labels 폴더
-
-# big_frame = ttk.Frame(window)
-# big_frame.pack(fill="both", expand=True)
-
-# style = ttk.Style(window)
-# window.tk.call("source", "azure.tcl")
-# window.tk.call("set_theme", "dark")
-
-# style.theme_use('dark')
-
-# print(f"start : {time.strftime('%X')}")
-# asyncio.run(main())
-# print(f"end : {time.strftime('%X')}")
