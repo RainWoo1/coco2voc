@@ -19,7 +19,7 @@ def add_file():
         initialdir=r"C:\Users\waycen\Downloads", \
         filetypes=(('json files','*.json'),('all files','*.*')))
     for file in files:
-        list_file.insert(END, file) # list_file.insert('', 'end', text=file, values=file, iid=str(file) + "번")
+        list_file.insert(END, file)
 
 # 선택 삭제
 def del_file():
@@ -86,36 +86,30 @@ def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, appl
             print("Error: Failed to create the directory")
     elif CheckVar1.get() == 0:
         class_target_path = folder + '/'
+    
+    cat_ids = coco_instance.getCatIds()
 
     for i, img in enumerate(coco_imgs):
         img_id = coco_instance.getImgIds(img) # [14]
-
-        # lesion
-        category_id = coco_instance.getCatIds(catNms=['lesion']) # 81 # print(coco_anns[9]['image_id'])
-       
-        annotation_ids = coco_instance.getAnnIds(catIds=category_id, imgIds=img_id) # [1]
-        if not annotation_ids:
-            continue
-        annotations = coco_instance.loadAnns(annotation_ids)
-        class_seg, instance_seg, id_seg, class_mask = annotations_to_seg(annotations, coco_instance, apply_border, color) # segment에 annotation하는 함수
-        Image.fromarray(class_mask).convert("P").save(class_target_path + coco_imgs[img_id[0]]['file_name'][:-4] + '_EGC.png') # NumPy 배열을 PIL 이미지로 변환
-        
-        # tool
-        category_id = coco_instance.getCatIds(catNms=['tools']) # [82]
-        annotation_id1 = coco_instance.getAnnIds(catIds=category_id, imgIds=img_id)
-        if not annotation_id1:
-            continue
-        else:
-            annotations1 = coco_instance.loadAnns(annotation_id1)
-            class_seg, instance_seg, id_seg, class_mask = annotations_to_seg(annotations1, coco_instance, apply_border, color) # segment에 annotation하는 함수
-            Image.fromarray(class_mask).convert("P").save(class_target_path + coco_imgs[img_id[0]]['file_name'][:-4] +  '_EGC_' + str(category_id[0]) +'.png')
+        for ids in cat_ids:
+            categories = coco_instance.loadCats(ids)
+            supercategory = categories[0]["supercategory"]
+            if supercategory == '':
+                cat_name = categories[0]["name"]
+                annotation_ids = coco_instance.getAnnIds(catIds=ids, imgIds=img_id)
+                if not annotation_ids:
+                    continue
+                annotations = coco_instance.loadAnns(annotation_ids)
+                class_seg, instance_seg, id_seg, class_mask = annotations_to_seg(annotations, coco_instance, apply_border, color) # segment에 annotation하는 함수
+                Image.fromarray(class_mask).convert("P").save(class_target_path + coco_imgs[img_id[0]]['file_name'][:-4] + '_' + cat_name + '.png') # NumPy 배열을 PIL 이미지로 변환
+            else:
+                category = categories
     
     print("=== Log: ", filename, " finished ===")
     completedThreadNumber += 1
-    progress = (completedThreadNumber)/totalThreadNumber * 100  # 실제 percent 정보를 계산
+    progress = (completedThreadNumber)/totalThreadNumber * 100
     p_var.set(progress)
     progress_bar.update()
-
 
 def s(event):
     if list_file.size() == 0:
@@ -151,12 +145,6 @@ if __name__ == '__main__':
     scrollbar = Scrollbar(list_frame)
     scrollbar.pack(side="right", fill="y")
 
-    # list_file = ttk.Treeview(list_frame, columns=(1, 2), height=15, show="headings", yscrollcommand=scrollbar.set)
-    # list_file.pack(side='left')
-    # list_file.heading(1, text="파일명")
-    # list_file.heading(2, text="진행상황")
-    # list_file.column(2, width=100)
-
     list_file = Listbox(list_frame, selectmode="extended", height=15, yscrollcommand=scrollbar.set)
     list_file.pack(side="left", fill="both", expand=True)
     scrollbar.config(command=list_file.yview)
@@ -175,6 +163,11 @@ if __name__ == '__main__':
     CheckVar1 = IntVar()
     c1 = Checkbutton(window, text="다운로드 시 파일명으로 폴더 만들기", variable=CheckVar1)
     c1.pack()
+
+    # Supercategory
+    CheckVar2 = IntVar()
+    c2 = Checkbutton(window, text="Supercategory 한 파일로 만들기", variable=CheckVar2)
+    c2.pack()
 
     # 옵션 프레임
     frame_option = LabelFrame(window, text="옵션")
@@ -214,7 +207,7 @@ if __name__ == '__main__':
     frame_run = Frame(window)
     frame_run.pack(fill="x", padx=5, pady=5)
 
-    btn_close = Button(frame_run, padx=5, pady=5, text="닫기", width=12, command=window.quit) # window.quit command=windowquit()
+    btn_close = Button(frame_run, padx=5, pady=5, text="닫기", width=12, command=window.quit)
    
     btn_close.pack(side="right", padx=5, pady=5)
 
