@@ -12,7 +12,7 @@ import numpy as np
 from PIL import Image
 from pycocotools.coco import COCO
 
-from coco_to_voc_aux import annotations_to_seg
+from util.coco_to_voc_aux import annotations_to_seg
 
 def add_file():
     files = filedialog.askopenfilenames(title='Select input file', \
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     window.title("COCO to VOC")
 
     # File Frame (Add File)
-    file_frame = Frame(window) # label1 = Label(window, text="COCO format을 선택해 주세요.")
+    file_frame = Frame(window)
     file_frame.pack(fill="x", padx=5, pady=5) # label1.pack()
 
     btn_add_file = Button(file_frame, padx=5, pady=5, width=12, text="Add File", command=add_file)

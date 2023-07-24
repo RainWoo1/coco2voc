@@ -36,9 +36,9 @@ def annotations_to_seg(annotations, coco_instance, apply_border, color):
             class_mask = np.zeros((h, w, 3), np.uint8)
 
             # 컬러 정하기
-            if color == "빨간색":
+            if color == "Red":
                 class_mask[selected_region] = (255, 0, 0)
-            elif color == "파란색":
+            elif color == "Blue":
                 class_mask[selected_region] = (0, 0, 255)
             else:
                 class_mask[selected_region] = (255, 255, 255)
