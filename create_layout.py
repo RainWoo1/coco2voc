@@ -170,10 +170,10 @@ def coco2voc(annotations_file: str, folder: str, color: str, n: int = None, appl
 
 def s(event):
     if list_file.size() == 0:
-        msgbox.showwarning("Warning", "Add an image file") # 이미지 파일을 추가하세요
+        msgbox.showwarning("Warning", "Add an image file") # Add an image file
         return
     if len(txt_dest_path.get()) == 0:
-        msgbox.showwarning("Warning", "Select a storage path") # 저장 경로를 선택하세요
+        msgbox.showwarning("Warning", "Select a storage path") # Select a storage path
         return
     start()
 
